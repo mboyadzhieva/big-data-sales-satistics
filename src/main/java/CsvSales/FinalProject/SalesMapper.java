@@ -18,6 +18,7 @@ import org.apache.hadoop.mapred.Reporter;
 
 public class SalesMapper extends MapReduceBase implements Mapper<LongWritable, Text, Text, FloatWritable> {
 
+	// fields initialized by the user input and used in the mapper
 	static String startDate;
 	static String endDate;
 	static String inputCountry;
@@ -26,7 +27,10 @@ public class SalesMapper extends MapReduceBase implements Mapper<LongWritable, T
 	static String result;
 	static boolean isPrecise;
 
-	private boolean isPaymentType;
+	// fields initialized by the mapper and used in ResultFrame
+	static boolean searchByCity;
+	static boolean isPaymentType;
+
 	private int transactionDateIndex = -1;
 	private int productIndex = -1;
 	private int priceIndex = -1;
@@ -44,18 +48,13 @@ public class SalesMapper extends MapReduceBase implements Mapper<LongWritable, T
 		if (key.equals(new LongWritable(0)) && transactionDateIndex < 0 && productIndex < 0 && priceIndex < 0
 				&& paymentTypeIndex < 0 && cityIndex < 0 && countryIndex < 0) {
 
-			findIndexes(data);
+			this.findIndexes(data);
 		} else {
 
 			String transactionDateString = data[transactionDateIndex];
 			Date transactionDateParsed = formatDateInput(transactionDateString);
 			Date startDateParsed = formatDateInput(startDate);
 			Date endDateParsed = formatDateInput(endDate);
-
-			if (data[4].equals("Dawn")) {
-				System.out.println("wtf endDate:" + endDateParsed);
-				System.out.println("wtf transactionDate:" + transactionDateParsed);
-			}
 
 			if ((transactionDateParsed.equals(startDateParsed) || transactionDateParsed.after(startDateParsed))
 					&& (transactionDateParsed.equals(endDateParsed) || transactionDateParsed.before(endDateParsed))) {
@@ -88,8 +87,26 @@ public class SalesMapper extends MapReduceBase implements Mapper<LongWritable, T
 	}
 
 	/**
-	 * Iterates through the first line of the CSV file in order to find the indexes
-	 * of the columns we need.
+	 * Sets a property in the Reducer class that defines what calculations will be
+	 * done there. It also sets a property in the Mapper class that is used to
+	 * determine whether the output needs information about the type of the payment
+	 * or not.
+	 */
+	private void checkResultType() {
+		if (result.equals("Тотал") || result.equals("Тип плащане тотал")) {
+			SalesReducer.resultType = "sum";
+		} else if (result.equals("Средна сума") || result.equals("Тип плащане средно")) {
+			SalesReducer.resultType = "avg";
+		}
+
+		if (result.toLowerCase().contains("тип")) {
+			isPaymentType = true;
+		}
+	}
+
+	/**
+	 * Iterates through the first line of the CSV file (the header) in order to find
+	 * the indexes of the columns that are needed for further calculations.
 	 * 
 	 * @param data Represents a line in the CSV file
 	 */
@@ -111,19 +128,10 @@ public class SalesMapper extends MapReduceBase implements Mapper<LongWritable, T
 		}
 	}
 
-	private void checkResultType() {
-		if (result.equals("Тотал") || result.equals("Тип плащане тотал")) {
-			SalesReducer.resultType = "sum";
-		} else if (result.equals("Средна сума") || result.equals("Тип плащане средно")) {
-			SalesReducer.resultType = "avg";
-		}
-
-		if (result.toLowerCase().contains("тип")) {
-			isPaymentType = true;
-		}
-	}
-
 	/**
+	 * Trying to parse a given String as a Date variable, using the possible formats
+	 * for that input string.
+	 * 
 	 * @param dateString A date from the JFrame or the CSV file in a String format
 	 * @return The input date is parsed and returned in a Date format
 	 */
@@ -148,11 +156,19 @@ public class SalesMapper extends MapReduceBase implements Mapper<LongWritable, T
 		}
 
 		Date truncatedDate = DateUtils.truncate(parsedDate, Calendar.DATE);
-		System.out.println("Truncated date: " + truncatedDate);
-
 		return truncatedDate;
 	}
 
+	/**
+	 * @param isAllProducts If this is true, all sales in the CSV file are
+	 *                      collected, if not - only the lines that correspond to
+	 *                      the given product name
+	 * @param product       The product attribute from the current CSV line
+	 * @param country       The country attribute from the current CSV line
+	 * @param city          The city attribute from the current CSV line
+	 * @param paymentType   The payment type attribute from the current CSV line
+	 * @return Result as Text
+	 */
 	private Text searchSalesByProductType(boolean isAllProducts, String product, String country, String city,
 			String paymentType) {
 		Text keyData = new Text();
@@ -169,6 +185,11 @@ public class SalesMapper extends MapReduceBase implements Mapper<LongWritable, T
 	}
 
 	/**
+	 * Based on the search type that is selected, the method compares the user input
+	 * and the CSV file value differently: for precise search the equalsIgnoreCase()
+	 * is used, while for imprecise search the contains() method checks for
+	 * similarities
+	 * 
 	 * @param country     The country attribute from the current CSV line
 	 * @param city        The city attribute from the current CSV line
 	 * @param paymentType The payment type attribute from the current CSV line
@@ -176,8 +197,6 @@ public class SalesMapper extends MapReduceBase implements Mapper<LongWritable, T
 	 *         the OutputCollector
 	 */
 	private Text precisionSearch(String country, String city, String paymentType) {
-		boolean searchByCity = false;
-
 		if (!inputCountry.isEmpty() && !inputCity.isEmpty()) {
 			if (isPrecise) {
 				if (city.equalsIgnoreCase(inputCity) && country.equalsIgnoreCase(inputCountry)) {
@@ -215,6 +234,14 @@ public class SalesMapper extends MapReduceBase implements Mapper<LongWritable, T
 		return keyData;
 	}
 
+	/**
+	 * @param searchByCity If this is true, the mapper collects the city property in
+	 *                     each line, if not - it collects the country property
+	 * @param city         The city column in the current CSV line
+	 * @param country      The country column in the current CSV line
+	 * @param paymentType  The payment type column in the current CSV line
+	 * @return String representation of the needed information
+	 */
 	private String salesByPaymentTypeIfAvailable(boolean searchByCity, String city, String country,
 			String paymentType) {
 
@@ -222,15 +249,15 @@ public class SalesMapper extends MapReduceBase implements Mapper<LongWritable, T
 
 		if (isPaymentType) {
 			if (searchByCity) {
-				stringBuilder.append(city + " - " + paymentType);
+				stringBuilder.append(city + " - " + paymentType + " - ");
 			} else {
-				stringBuilder.append(country + " - " + paymentType);
+				stringBuilder.append(country + " - " + paymentType + " - ");
 			}
 		} else {
 			if (searchByCity) {
-				stringBuilder.append(city);
+				stringBuilder.append(city + " - ");
 			} else {
-				stringBuilder.append(country);
+				stringBuilder.append(country + " - ");
 			}
 		}
 

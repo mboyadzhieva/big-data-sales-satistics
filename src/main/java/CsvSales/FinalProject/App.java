@@ -14,10 +14,6 @@ import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.TextInputFormat;
 import org.apache.hadoop.mapred.TextOutputFormat;
 
-/**
- * Hello world!
- *
- */
 public class App {
 	public static void main(String[] args) {
 		SalesFrame salesFrame = new SalesFrame("Search Sales Information");

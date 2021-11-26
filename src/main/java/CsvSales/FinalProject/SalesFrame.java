@@ -4,7 +4,9 @@ import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -49,24 +51,25 @@ public class SalesFrame extends JFrame {
 	public SalesFrame(String name) {
 		super(name);
 
-		this.setLayout(new GridLayout(8, 2)); // row, col
+		this.setLayout(new GridLayout(8, 2));
 		this.setSize(new Dimension(440, 240));
-
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-		this.initializeFields();
+		this.addElementsToFrame();
 	}
 
-	private void initializeFields() {
+	private void addElementsToFrame() {
 		startDateLabel.setHorizontalAlignment(JLabel.CENTER);
 		startDateSettings.setFirstDayOfWeek(DayOfWeek.MONDAY);
 		startDateSettings.setAllowEmptyDates(false);
+		startDatePicker.setDate(LocalDate.of(2009, 1, 1));
 		this.add(startDateLabel);
 		this.add(startDatePicker);
 
 		endDateLabel.setHorizontalAlignment(JLabel.CENTER);
 		endDateSettings.setFirstDayOfWeek(DayOfWeek.MONDAY);
 		endDateSettings.setAllowEmptyDates(false);
+		endDatePicker.setDate(LocalDate.of(2009, 1, 31));
 		this.add(endDateLabel);
 		this.add(endDatePicker);
 
@@ -80,9 +83,9 @@ public class SalesFrame extends JFrame {
 
 		productLabel.setHorizontalAlignment(JLabel.CENTER);
 		productDropDown.addItem("All");
-		productDropDown.addItem("Product 1");
-		productDropDown.addItem("Product 2");
-		productDropDown.addItem("Product 3");
+		productDropDown.addItem("Product1");
+		productDropDown.addItem("Product2");
+		productDropDown.addItem("Product3");
 		this.add(productLabel);
 		this.add(productDropDown);
 
@@ -109,15 +112,20 @@ public class SalesFrame extends JFrame {
 				boolean isValid = isCityValid();
 
 				if (isValid) {
-					applyFilters();
+					setMapperProperties();
 
 					App.startHadoopJob();
+					try {
+						new ResultFrame("Result").setVisible(true);
+					} catch (IOException e1) {
+						e1.printStackTrace();
+					}
 				}
 			}
 		});
 	}
 
-	private void applyFilters() {
+	private void setMapperProperties() {
 		SalesMapper.startDate = startDatePicker.getDateStringOrEmptyString();
 		SalesMapper.endDate = endDatePicker.getDateStringOrEmptyString();
 		SalesMapper.inputCountry = countryTField.getText();
@@ -125,9 +133,6 @@ public class SalesFrame extends JFrame {
 		SalesMapper.inputProduct = productDropDown.getSelectedItem().toString();
 		SalesMapper.result = resultDropDown.getSelectedItem().toString();
 		SalesMapper.isPrecise = precisionCheck.isSelected();
-		System.out.println(SalesMapper.isPrecise);
-		System.out.println(SalesMapper.inputCountry);
-		System.out.println(SalesMapper.inputCity);
 	}
 
 	private boolean isCityValid() {

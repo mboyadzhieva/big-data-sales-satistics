@@ -12,28 +12,24 @@ import org.apache.hadoop.mapred.Reporter;
 
 public class SalesReducer extends MapReduceBase implements Reducer<Text, FloatWritable, Text, FloatWritable> {
 
-	static String resultType; // avg/sum
+	static String resultType;
 
 	@Override
 	public void reduce(Text key, Iterator<FloatWritable> values, OutputCollector<Text, FloatWritable> output,
 			Reporter reporter) throws IOException {
-		// TODO Auto-generated method stub
 
 		float sum = 0;
 		float count = 0;
 
+		while (values.hasNext()) {
+			sum += values.next().get();
+			count++;
+		}
+
 		if (!resultType.isEmpty() && !resultType.equals(null)) {
 			if (resultType.equalsIgnoreCase("avg")) {
-				while (values.hasNext()) {
-					float current = values.next().get();
-					sum += current;
-					count++;
-				}
 				output.collect(key, new FloatWritable(sum / count));
 			} else if (resultType.equalsIgnoreCase("sum")) {
-				while (values.hasNext()) {
-					sum += values.next().get();
-				}
 				output.collect(key, new FloatWritable(sum));
 			}
 		}
