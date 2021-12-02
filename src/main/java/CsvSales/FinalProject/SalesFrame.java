@@ -109,7 +109,7 @@ public class SalesFrame extends JFrame {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				setMapperProperties();
+				setMapperAndReducerProperties();
 
 				App.startHadoopJob();
 
@@ -118,18 +118,26 @@ public class SalesFrame extends JFrame {
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				}
-
 			}
 		});
 	}
 
-	private void setMapperProperties() {
+	private void setMapperAndReducerProperties() {
 		SalesMapper.startDate = startDatePicker.getDateStringOrEmptyString();
 		SalesMapper.endDate = endDatePicker.getDateStringOrEmptyString();
 		SalesMapper.inputCountry = countryTField.getText();
 		SalesMapper.inputCity = cityTField.getText();
 		SalesMapper.inputProduct = productDropDown.getSelectedItem().toString();
-		SalesMapper.result = resultDropDown.getSelectedItem().toString();
 		SalesMapper.isPrecise = precisionCheck.isSelected();
+
+		String result = resultDropDown.getSelectedItem().toString();
+		SalesMapper.isPaymentType = result.toLowerCase().contains("тип") ? true : false;
+		SalesMapper.searchByCity = !cityTField.getText().isEmpty() ? true : false;
+
+		if (result.equals("Тотал") || result.equals("Тип плащане тотал")) {
+			SalesReducer.resultType = "sum";
+		} else if (result.equals("Средна сума") || result.equals("Тип плащане средно")) {
+			SalesReducer.resultType = "avg";
+		}
 	}
 }

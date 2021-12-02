@@ -1,7 +1,7 @@
 package CsvSales.FinalProject;
 
-import java.awt.Dimension;
-import java.awt.GridLayout;
+import java.awt.BorderLayout;
+import java.awt.Color;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -20,22 +20,26 @@ import org.apache.hadoop.fs.Path;
 
 @SuppressWarnings("serial")
 public class ResultFrame extends JFrame {
+	JPanel panel;
 
 	public ResultFrame(String name) throws IOException {
 		super(name);
 
 		JTable tableResult = this.initializeResultTable();
 		JScrollPane resultScroller = new JScrollPane(tableResult);
-		JPanel panel = new JPanel();
+		JPanel tablePanel = new JPanel();
 
-		this.setLayout(new GridLayout(1, 1));
-		this.setSize(new Dimension(700, 500));
+		tablePanel.setLayout(new BorderLayout());
+		tablePanel.add(resultScroller, BorderLayout.CENTER);
+
+		panel = (JPanel) this.getContentPane();
+		panel.add(tablePanel, BorderLayout.CENTER);
+		tableResult.setForeground(Color.BLACK);
+		tableResult.setBackground(Color.LIGHT_GRAY);
+
+		this.pack();
 		this.setLocationRelativeTo(null);
 		this.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
-		this.add(panel);
-
-		resultScroller.setPreferredSize(new Dimension(600, 450));
-		panel.add(resultScroller);
 	}
 
 	private JTable initializeResultTable() throws IOException {

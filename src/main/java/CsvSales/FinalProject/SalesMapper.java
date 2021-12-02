@@ -18,16 +18,15 @@ import org.apache.hadoop.mapred.Reporter;
 
 public class SalesMapper extends MapReduceBase implements Mapper<LongWritable, Text, Text, FloatWritable> {
 
-	// fields initialized by the user input and used in the mapper
+	// fields initialized by the user input and used here
 	static String startDate;
 	static String endDate;
 	static String inputCountry;
 	static String inputCity;
 	static String inputProduct;
-	static String result;
 	static boolean isPrecise;
 
-	// fields initialized by the mapper and used both here and in ResultFrame
+	// fields initialized by the SalesFrame and used both here and in ResultFrame
 	static boolean searchByCity;
 	static boolean isPaymentType;
 
@@ -44,8 +43,6 @@ public class SalesMapper extends MapReduceBase implements Mapper<LongWritable, T
 
 		String[] data = value.toString().split(",");
 
-		this.setResultType();
-
 		if (key.equals(new LongWritable(0)) && transactionDateIndex < 0 && productIndex < 0 && priceIndex < 0
 				&& paymentTypeIndex < 0 && cityIndex < 0 && countryIndex < 0) {
 
@@ -61,9 +58,7 @@ public class SalesMapper extends MapReduceBase implements Mapper<LongWritable, T
 				String city = data[cityIndex].trim();
 				String product = data[productIndex].trim();
 
-				boolean isAllProducts = inputProduct.equalsIgnoreCase("all");
-
-				Text keyData = this.checkUserInput(isAllProducts, product, city, country, paymentType);
+				Text keyData = this.checkUserInput(product, city, country, paymentType);
 
 				if (keyData.getLength() != 0) {
 					output.collect(keyData, new FloatWritable(Float.parseFloat(price)));
@@ -71,26 +66,6 @@ public class SalesMapper extends MapReduceBase implements Mapper<LongWritable, T
 					return;
 				}
 			}
-		}
-	}
-
-	/**
-	 * Sets a property in the Reducer class that defines the type of calculations
-	 * that will be done there (sum or average). It also sets a property in the
-	 * Mapper class that is used to determine whether the output needs information
-	 * about the type of the payment.
-	 */
-	private void setResultType() {
-		if (result.equals("Тотал") || result.equals("Тип плащане тотал")) {
-			SalesReducer.resultType = "sum";
-		} else if (result.equals("Средна сума") || result.equals("Тип плащане средно")) {
-			SalesReducer.resultType = "avg";
-		}
-
-		if (result.toLowerCase().contains("тип")) {
-			isPaymentType = true;
-		} else {
-			isPaymentType = false;
 		}
 	}
 
@@ -176,24 +151,22 @@ public class SalesMapper extends MapReduceBase implements Mapper<LongWritable, T
 	 * Checks the user input and how and whether it corresponds to the values from
 	 * the CSV columns.
 	 * 
-	 * @param isAllProducts true if the user chose to see a result for all products
-	 * @param product       The product attribute from the current CSV line
-	 * @param country       The country attribute from the current CSV line
-	 * @param city          The city attribute from the current CSV line
-	 * @param paymentType   The payment type attribute from the current CSV line
+	 * @param product     The product attribute from the current CSV line
+	 * @param country     The country attribute from the current CSV line
+	 * @param city        The city attribute from the current CSV line
+	 * @param paymentType The payment type attribute from the current CSV line
 	 * @return Text representation of the information that needs to be collected by
 	 *         the OutputCollector as a key
 	 */
-	private Text checkUserInput(boolean isAllProducts, String product, String city, String country,
-			String paymentType) {
+	private Text checkUserInput(String product, String city, String country, String paymentType) {
 		String result = "";
 
-		if (!isAllProducts && product.equalsIgnoreCase(inputProduct)) {
-			result = this.precisionSearch(country, city, paymentType);
-		} else if (isAllProducts) {
-			result = this.precisionSearch(country, city, paymentType);
-		} else if (!product.equalsIgnoreCase(inputProduct)) {
-			return new Text();
+		if (this.isCityAndCountryValid(country, city)) {
+			if (product.equalsIgnoreCase(inputProduct)) {
+				result = this.salesByPaymentTypeIfAvailable(city, country, paymentType);
+			} else if (inputProduct.equals("All")) {
+				result = this.salesByPaymentTypeIfAvailable(city, country, paymentType);
+			}
 		}
 
 		Text keyData = new Text(result);
@@ -201,81 +174,63 @@ public class SalesMapper extends MapReduceBase implements Mapper<LongWritable, T
 	}
 
 	/**
-	 * It compares the user input and CSV column value based on the search type that
-	 * is selected. For precise search the values should be exactly equal (case
-	 * insensitive), while for imprecise search the user input should be contained
-	 * in the CSV column value.
+	 * Based on the precision boolean, the city and the country from the user input
+	 * are compared to the values from the CSV file.
 	 * 
 	 * @param country     The country attribute from the current CSV line
 	 * @param city        The city attribute from the current CSV line
 	 * @param paymentType The payment type attribute from the current CSV line
-	 * @return String result that will be used for constructing the key to be
-	 *         collected by the OutputCollector
+	 * @return true if the current line from the CSV file id equal to the
 	 */
-	private String precisionSearch(String country, String city, String paymentType) {
+	private boolean isCityAndCountryValid(String country, String city) {
 		if (!inputCountry.isEmpty() && !inputCity.isEmpty()) {
 			if (isPrecise) {
 				if (city.equalsIgnoreCase(inputCity) && country.equalsIgnoreCase(inputCountry)) {
-					searchByCity = true;
-				} else {
-					return "";
+					return true;
 				}
 			} else {
 				if (city.toLowerCase().contains(inputCity.toLowerCase())
 						&& country.toLowerCase().contains(inputCountry.toLowerCase())) {
-					searchByCity = true;
-				} else {
-					return "";
+					return true;
 				}
 			}
 		} else if (!inputCountry.isEmpty() && inputCity.isEmpty()) {
 			if (isPrecise) {
 				if (country.equalsIgnoreCase(inputCountry)) {
-					searchByCity = false;
-				} else {
-					return "";
+					return true;
 				}
 			} else {
 				if (country.toLowerCase().contains(inputCountry.toLowerCase())) {
-					searchByCity = false;
-				} else {
-					return "";
+					return true;
 				}
 			}
 		} else if (inputCountry.isEmpty() && !inputCity.isEmpty()) {
 			if (isPrecise) {
 				if (city.equalsIgnoreCase(inputCity)) {
-					searchByCity = true;
-				} else {
-					return "";
+					return true;
 				}
 			} else {
 				if (city.toLowerCase().contains(inputCity.toLowerCase())) {
-					searchByCity = true;
-				} else {
-					return "";
+					return true;
 				}
 			}
+		} else if (inputCountry.isEmpty() && inputCity.isEmpty()) {
+			return true;
 		}
 
-		String result = this.salesByPaymentTypeIfAvailable(city, country, paymentType);
-
-		return result;
+		return false;
 	}
 
 	/**
 	 * Decides whether the city, the country and the payment type should be included
 	 * in the final result that will be collected by the OutputCollector.
 	 * 
-	 * @param searchByCity If this is true, the OutputCollector collects the city
-	 *                     property in each line, if not - it collects the country
-	 *                     property
-	 * @param city         The city column in the current CSV line
-	 * @param country      The country column in the current CSV line
-	 * @param paymentType  The payment type column in the current CSV line
+	 * @param city        The city column in the current CSV line
+	 * @param country     The country column in the current CSV line
+	 * @param paymentType The payment type column in the current CSV line
 	 * @return String representation of the needed information
 	 */
-	private String salesByPaymentTypeIfAvailable(String city, String country, String paymentType) {
+	private String salesByPaymentTypeIfAvailable(String city, String country, String paymentType) { // rename
 
 		String result = "";
 
