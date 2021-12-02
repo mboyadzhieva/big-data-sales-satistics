@@ -13,7 +13,6 @@ import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 
 import com.github.lgooddatepicker.components.DatePicker;
@@ -36,16 +35,16 @@ public class SalesFrame extends JFrame {
 	JLabel cityLabel = new JLabel("Град:");
 	JTextField cityTField = new JTextField();
 
-	JLabel productLabel = new JLabel("Избери продукт:");
+	JLabel productLabel = new JLabel("Изберете продукт:");
 	JComboBox<String> productDropDown = new JComboBox<String>();
 
-	JLabel resultLabel = new JLabel("Избери резултат:");
+	JLabel resultLabel = new JLabel("Изберете вид резултат:");
 	JComboBox<String> resultDropDown = new JComboBox<String>();
 
 	JLabel precisionLabel = new JLabel("Точно търсене:");
 	JCheckBox precisionCheck = new JCheckBox();
 
-	JLabel errorLabel = new JLabel();
+	JLabel emptyLabel = new JLabel();
 	JButton searchBtn = new JButton("Търсене");
 
 	public SalesFrame(String name) {
@@ -53,6 +52,7 @@ public class SalesFrame extends JFrame {
 
 		this.setLayout(new GridLayout(8, 2));
 		this.setSize(new Dimension(440, 240));
+		this.setLocationRelativeTo(null);
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
 		this.addElementsToFrame();
@@ -102,25 +102,23 @@ public class SalesFrame extends JFrame {
 		this.add(precisionCheck);
 
 		searchBtn.setBounds(50, 50, 120, 30);
-		this.add(errorLabel);
+		this.add(emptyLabel);
 		this.add(searchBtn);
 
 		searchBtn.addActionListener(new ActionListener() {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				boolean isValid = isCityValid();
+				setMapperProperties();
 
-				if (isValid) {
-					setMapperProperties();
+				App.startHadoopJob();
 
-					App.startHadoopJob();
-					try {
-						new ResultFrame("Result").setVisible(true);
-					} catch (IOException e1) {
-						e1.printStackTrace();
-					}
+				try {
+					new ResultFrame("Result").setVisible(true);
+				} catch (IOException e1) {
+					e1.printStackTrace();
 				}
+
 			}
 		});
 	}
@@ -133,14 +131,5 @@ public class SalesFrame extends JFrame {
 		SalesMapper.inputProduct = productDropDown.getSelectedItem().toString();
 		SalesMapper.result = resultDropDown.getSelectedItem().toString();
 		SalesMapper.isPrecise = precisionCheck.isSelected();
-	}
-
-	private boolean isCityValid() {
-		if (!cityTField.getText().isEmpty() && countryTField.getText().isEmpty()) {
-			String msg = "Не може да въведетe град без държава!";
-			JOptionPane.showMessageDialog(this, msg);
-			return false;
-		}
-		return true;
 	}
 }

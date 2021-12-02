@@ -21,8 +21,6 @@ import org.apache.hadoop.fs.Path;
 @SuppressWarnings("serial")
 public class ResultFrame extends JFrame {
 
-	static boolean isPaymentType;
-
 	public ResultFrame(String name) throws IOException {
 		super(name);
 
@@ -31,11 +29,12 @@ public class ResultFrame extends JFrame {
 		JPanel panel = new JPanel();
 
 		this.setLayout(new GridLayout(1, 1));
-		this.setSize(new Dimension(1000, 500));
+		this.setSize(new Dimension(700, 500));
+		this.setLocationRelativeTo(null);
 		this.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
 		this.add(panel);
 
-		resultScroller.setPreferredSize(new Dimension(900, 450));
+		resultScroller.setPreferredSize(new Dimension(600, 450));
 		panel.add(resultScroller);
 	}
 
