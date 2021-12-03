@@ -51,7 +51,7 @@ public class SalesFrame extends JFrame {
 		super(name);
 
 		this.setLayout(new GridLayout(8, 2));
-		this.setSize(new Dimension(440, 240));
+		this.setSize(new Dimension(440, 300));
 		this.setLocationRelativeTo(null);
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -131,6 +131,7 @@ public class SalesFrame extends JFrame {
 		SalesMapper.isPrecise = precisionCheck.isSelected();
 
 		String result = resultDropDown.getSelectedItem().toString();
+
 		SalesMapper.isPaymentType = result.toLowerCase().contains("тип") ? true : false;
 		SalesMapper.searchByCity = !cityTField.getText().isEmpty() ? true : false;
 

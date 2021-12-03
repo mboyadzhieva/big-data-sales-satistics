@@ -3,6 +3,8 @@ package CsvSales.FinalProject;
 import java.io.IOException;
 import java.net.URI;
 
+import javax.swing.UIManager;
+
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.FloatWritable;
@@ -16,6 +18,11 @@ import org.apache.hadoop.mapred.TextOutputFormat;
 
 public class App {
 	public static void main(String[] args) {
+		try {
+			UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
+		} catch (Exception ignored) {
+		}
+
 		SalesFrame salesFrame = new SalesFrame("Search Sales Information");
 		salesFrame.setVisible(true);
 	}

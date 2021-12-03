@@ -18,7 +18,7 @@ import org.apache.hadoop.mapred.Reporter;
 
 public class SalesMapper extends MapReduceBase implements Mapper<LongWritable, Text, Text, FloatWritable> {
 
-	// fields initialized by the user input and used here
+	// fields initialized by the user input in SalesFrame and used here
 	static String startDate;
 	static String endDate;
 	static String inputCountry;
@@ -26,7 +26,8 @@ public class SalesMapper extends MapReduceBase implements Mapper<LongWritable, T
 	static String inputProduct;
 	static boolean isPrecise;
 
-	// fields initialized by the SalesFrame and used both here and in ResultFrame
+	// fields initialized by the user input in SalesFrame and used both here and in
+	// ResultFrame
 	static boolean searchByCity;
 	static boolean isPaymentType;
 
@@ -119,9 +120,9 @@ public class SalesMapper extends MapReduceBase implements Mapper<LongWritable, T
 	 * Trying to parse a given String as a Date variable, using the possible formats
 	 * for that input string.
 	 * 
-	 * @param dateString A date from the JFrame user input or the CSV file in a
-	 *                   String format
-	 * @return The input date is parsed and returned in a Date format
+	 * @param dateString A date from the user input or the CSV file in a String
+	 *                   format
+	 * @return The parsed input date in a Date format
 	 */
 	private Date formatDateInput(String dateString) {
 		DateFormat originalWithDot = new SimpleDateFormat("MM.dd.yy HH:mm");
@@ -152,8 +153,8 @@ public class SalesMapper extends MapReduceBase implements Mapper<LongWritable, T
 	 * the CSV columns.
 	 * 
 	 * @param product     The product attribute from the current CSV line
-	 * @param country     The country attribute from the current CSV line
 	 * @param city        The city attribute from the current CSV line
+	 * @param country     The country attribute from the current CSV line
 	 * @param paymentType The payment type attribute from the current CSV line
 	 * @return Text representation of the information that needs to be collected by
 	 *         the OutputCollector as a key
@@ -163,9 +164,9 @@ public class SalesMapper extends MapReduceBase implements Mapper<LongWritable, T
 
 		if (this.isCityAndCountryValid(country, city)) {
 			if (product.equalsIgnoreCase(inputProduct)) {
-				result = this.salesByPaymentTypeIfAvailable(city, country, paymentType);
+				result = this.getResultColums(city, country, paymentType);
 			} else if (inputProduct.equals("All")) {
-				result = this.salesByPaymentTypeIfAvailable(city, country, paymentType);
+				result = this.getResultColums(city, country, paymentType);
 			}
 		}
 
@@ -174,13 +175,13 @@ public class SalesMapper extends MapReduceBase implements Mapper<LongWritable, T
 	}
 
 	/**
-	 * Based on the precision boolean, the city and the country from the user input
-	 * are compared to the values from the CSV file.
+	 * Based on the static isPrecision boolean, the city and the country from the
+	 * user input are compared to the values from the CSV file.
 	 * 
-	 * @param country     The country attribute from the current CSV line
-	 * @param city        The city attribute from the current CSV line
-	 * @param paymentType The payment type attribute from the current CSV line
-	 * @return true if the current line from the CSV file id equal to the
+	 * @param country The country attribute from the current CSV line
+	 * @param city    The city attribute from the current CSV line
+	 * @return true if the current line from the CSV file corresponds to the user
+	 *         search for the country and the city
 	 */
 	private boolean isCityAndCountryValid(String country, String city) {
 		if (!inputCountry.isEmpty() && !inputCity.isEmpty()) {
@@ -222,27 +223,27 @@ public class SalesMapper extends MapReduceBase implements Mapper<LongWritable, T
 	}
 
 	/**
-	 * Decides whether the city, the country and the payment type should be included
-	 * in the final result that will be collected by the OutputCollector.
+	 * Decides what information should be included in the final result that will be
+	 * collected by the OutputCollector.
 	 * 
-	 * @param city        The city column in the current CSV line
-	 * @param country     The country column in the current CSV line
-	 * @param paymentType The payment type column in the current CSV line
-	 * @return String representation of the needed information
+	 * @param city        The city attribute in the current CSV line
+	 * @param country     The country attribute in the current CSV line
+	 * @param paymentType The payment type attribute in the current CSV line
+	 * @return String representation of the final form of the needed information
 	 */
-	private String salesByPaymentTypeIfAvailable(String city, String country, String paymentType) { // rename
+	private String getResultColums(String city, String country, String paymentType) {
 
 		String result = "";
 
 		if (isPaymentType) {
 			if (searchByCity) {
-				result = city + " - " + paymentType + " - ";
+				result = city + " - " + country + " - " + paymentType + " - ";
 			} else {
 				result = country + " - " + paymentType + " - ";
 			}
 		} else {
 			if (searchByCity) {
-				result = city + " - ";
+				result = city + " - " + country + " - ";
 			} else {
 				result = country + " - ";
 			}

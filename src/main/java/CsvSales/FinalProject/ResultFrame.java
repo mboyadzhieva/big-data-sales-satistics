@@ -1,7 +1,6 @@
 package CsvSales.FinalProject;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -34,8 +33,6 @@ public class ResultFrame extends JFrame {
 
 		panel = (JPanel) this.getContentPane();
 		panel.add(tablePanel, BorderLayout.CENTER);
-		tableResult.setForeground(Color.BLACK);
-		tableResult.setBackground(Color.LIGHT_GRAY);
 
 		this.pack();
 		this.setLocationRelativeTo(null);
@@ -46,10 +43,10 @@ public class ResultFrame extends JFrame {
 		String[] columnNames = {};
 
 		if (SalesMapper.isPaymentType) {
-			columnNames = SalesMapper.searchByCity ? new String[] { "City", "Payment Type", "Price" }
+			columnNames = SalesMapper.searchByCity ? new String[] { "City", "Country", "Payment Type", "Price" }
 					: new String[] { "Country", "Payment Type", "Price" };
 		} else {
-			columnNames = SalesMapper.searchByCity ? new String[] { "City", "Price" }
+			columnNames = SalesMapper.searchByCity ? new String[] { "City", "Country", "Price" }
 					: new String[] { "Country", "Price" };
 		}
 

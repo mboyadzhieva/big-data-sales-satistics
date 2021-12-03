@@ -13,8 +13,6 @@ import org.apache.hadoop.mapred.Reporter;
 public class SalesReducer extends MapReduceBase implements Reducer<Text, FloatWritable, Text, FloatWritable> {
 
 	static String resultType;
-	// static String country;
-	// static boolean isOnlyCity;
 
 	@Override
 	public void reduce(Text key, Iterator<FloatWritable> values, OutputCollector<Text, FloatWritable> output,
